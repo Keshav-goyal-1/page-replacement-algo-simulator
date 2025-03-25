@@ -157,3 +157,66 @@ pageReferencesInput.classList.remove('input-error');
 pageReferencesError.classList.add('hidden');
 }
 
+ // ----------------------
+  // Remove Error Styles on Input
+  // ----------------------
+  const pageReferencesInput = document.getElementById('pageReferences');
+  const frameCountInput = document.getElementById('frameCount');
+
+  if (pageReferencesInput) {
+    pageReferencesInput.addEventListener('input', () => {
+      const error = document.getElementById('pageReferencesError');
+      pageReferencesInput.classList.remove('input-error');
+      if (error) error.classList.add('hidden');
+    });
+  }
+
+  if (frameCountInput) {
+    frameCountInput.addEventListener('input', () => {
+      const error = document.getElementById('frameCountError');
+      frameCountInput.classList.remove('input-error');
+      if (error) error.classList.add('hidden');
+    });
+  }
+
+  // ----------------------
+  // Page Replacement Algorithms
+  // ----------------------
+
+  function simulateFIFO(pages, frameCount) {
+    let frames = Array(frameCount).fill(null); // Initialize frames
+    let pageFaults = 0;
+    let history = [];
+    let pointer = 0; // Points to the frame to be replaced next
+
+    pages.forEach((page, index) => {
+      let fault = false;
+      let frameUpdated = null;
+      let hitFrames = [];
+
+      if (!frames.includes(page)) {
+        fault = true;
+        frames[pointer] = page;
+        frameUpdated = pointer;
+        pointer = (pointer + 1) % frameCount;
+        pageFaults++;
+      } else {
+        // Identify the frame that was hit
+        const hitIndex = frames.indexOf(page);
+        hitFrames.push(hitIndex);
+      }
+
+      history.push({
+        step: index + 1,
+        page: page,
+        frames: [...frames],
+        fault: fault,
+        frameUpdated: frameUpdated,
+        hitFrames: hitFrames, // Array of frame indices that had hits
+      });
+    });
+
+    return { history, pageFaults };
+  }
+
+ 
