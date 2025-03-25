@@ -269,3 +269,110 @@ pageReferencesError.classList.add('hidden');
 
   return { history, pageFaults };
 }
+function simulateLRU(pages, frameCount) {
+  let frames = Array(frameCount).fill(null);
+  let pageFaults = 0;
+  let history = [];
+  let recentUsage = []; // Tracks the order of page usage
+
+  pages.forEach((page, index) => {
+    let fault = false;
+    let frameUpdated = null;
+    let hitFrames = [];
+
+    if (!frames.includes(page)) {
+      fault = true;
+      if (frames.includes(null)) {
+        const emptyIndex = frames.indexOf(null);
+        frames[emptyIndex] = page;
+        frameUpdated = emptyIndex;
+      } else {
+        // Find the least recently used page
+        const lruPage = recentUsage.shift();
+        const lruIndex = frames.indexOf(lruPage);
+        frames[lruIndex] = page;
+        frameUpdated = lruIndex;
+      }
+      pageFaults++;
+    } else {
+      // Page hit
+      const hitIndex = frames.indexOf(page);
+      hitFrames.push(hitIndex);
+      // Update recent usage by removing the page from its current position
+      const usageIndex = recentUsage.indexOf(page);
+      if (usageIndex !== -1) {
+        recentUsage.splice(usageIndex, 1);
+      }
+    }
+
+    // Update recent usage by adding the current page
+    recentUsage.push(page);
+
+    history.push({
+      step: index + 1,
+      page: page,
+      frames: [...frames],
+      fault: fault,
+      frameUpdated: frameUpdated,
+      hitFrames: hitFrames, // Array of frame indices that had hits
+    });
+  });
+
+  return { history, pageFaults };
+}
+
+function simulateOptimal(pages, frameCount) {
+  let frames = Array(frameCount).fill(null);
+  let pageFaults = 0;
+  let history = [];
+
+  pages.forEach((page, index) => {
+    let fault = false;
+    let frameUpdated = null;
+    let hitFrames = [];
+
+    if (!frames.includes(page)) {
+      fault = true;
+      if (frames.includes(null)) {
+        const emptyIndex = frames.indexOf(null);
+        frames[emptyIndex] = page;
+        frameUpdated = emptyIndex;
+      } else {
+        // Predict future usage for each page in frames
+        let futureIndices = frames.map((framePage) => {
+          let nextUse = pages.slice(index + 1).indexOf(framePage);
+          return nextUse === -1 ? Infinity : nextUse;
+        });
+
+        // Select the frame with the farthest next use
+        let maxFuture = Math.max(...futureIndices);
+        let victimIndices = futureIndices
+          .map((val, idx) => ({ val, idx }))
+          .filter(obj => obj.val === maxFuture)
+          .map(obj => obj.idx);
+
+        // If multiple victims, select the first one
+        let victimIndex = victimIndices[0];
+
+        frames[victimIndex] = page;
+        frameUpdated = victimIndex;
+      }
+      pageFaults++;
+    } else {
+      // Page hit
+      const hitIndex = frames.indexOf(page);
+      hitFrames.push(hitIndex);
+    }
+
+    history.push({
+      step: index + 1,
+      page: page,
+      frames: [...frames],
+      fault: fault,
+      frameUpdated: frameUpdated,
+      hitFrames: hitFrames, // Array of frame indices that had hits
+    });
+  });
+
+  return { history, pageFaults };
+}
