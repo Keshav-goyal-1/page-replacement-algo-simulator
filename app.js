@@ -219,4 +219,53 @@ pageReferencesError.classList.add('hidden');
     return { history, pageFaults };
   }
 
- 
+ // Modified FIFO (Second-Chance Algorithm) Implementation
+ function simulateModifiedFIFO(pages, frameCount) {
+  let frames = Array(frameCount).fill(null); // Initialize frames
+  let referenceBits = Array(frameCount).fill(0); // Reference bits for second chance
+  let pageFaults = 0;
+  let history = [];
+  let pointer = 0; // Points to the frame to be replaced next
+
+  pages.forEach((page, index) => {
+    let fault = false;
+    let frameUpdated = null;
+    let hitFrames = [];
+
+    if (frames.includes(page)) {
+      // Page hit
+      const frameIndex = frames.indexOf(page);
+      referenceBits[frameIndex] = 1; // Set reference bit
+      hitFrames.push(frameIndex);
+    } else {
+      // Page fault
+      fault = true;
+      while (true) {
+        if (referenceBits[pointer] === 0) {
+          // Replace this page
+          frames[pointer] = page;
+          frameUpdated = pointer;
+          referenceBits[pointer] = 0; // Reset reference bit
+          pointer = (pointer + 1) % frameCount;
+          break;
+        } else {
+          // Give a second chance
+          referenceBits[pointer] = 0;
+          pointer = (pointer + 1) % frameCount;
+        }
+      }
+      pageFaults++;
+    }
+
+    history.push({
+      step: index + 1,
+      page: page,
+      frames: [...frames],
+      fault: fault,
+      frameUpdated: frameUpdated,
+      hitFrames: hitFrames, // Array of frame indices that had hits
+    });
+  });
+
+  return { history, pageFaults };
+}
