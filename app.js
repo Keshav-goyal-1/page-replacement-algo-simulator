@@ -36,3 +36,65 @@ if (startSimulationBtn) {
           alert('Algorithm not implemented.');
           return;
       }
+      simulationHistory = simulationResult.history;
+        currentStep = 0;
+
+        // Expose simulationHistory globally for chart.js
+        window.simulationHistory = simulationHistory;
+
+        // Display total page faults
+        const totalPageFaultsElem = document.getElementById('totalPageFaults');
+        if (totalPageFaultsElem) {
+          totalPageFaultsElem.innerText = `Total Page Faults: ${simulationResult.pageFaults}`;
+        }
+
+        // Clear previous visualization, narration, and feedback
+        const visualizationArea = document.getElementById('visualizationArea');
+        if (visualizationArea) visualizationArea.innerHTML = '';
+
+        const narrationText = document.getElementById('narrationText');
+        if (narrationText) narrationText.innerText = '';
+
+        const aiFeedback = document.getElementById('aiFeedback');
+        if (aiFeedback) {
+          aiFeedback.innerText = '';
+          aiFeedback.classList.remove('text-red-500');
+          aiFeedback.classList.add('text-gray-800', 'dark:text-gray-200');
+        }
+
+        // Ensure any simulation-specific errors are cleared
+        const simulationError = document.getElementById('simulationError');
+        if (simulationError) {
+          simulationError.innerText = '';
+          simulationError.classList.add('hidden');
+        }
+
+        // Initialize the visualization with frame labels
+        initializeVisualization(frameCount);
+
+        // Show the first step
+        showStep(0);
+        currentStep = 1; // Since we have shown the first step
+
+        // Enable simulation controls appropriately
+        const nextStepBtn = document.getElementById('nextStep');
+        const prevStepBtn = document.getElementById('prevStep');
+        const playPauseBtn = document.getElementById('playPause');
+
+        if (nextStepBtn) nextStepBtn.disabled = false;
+        if (prevStepBtn) prevStepBtn.disabled = true;
+        if (playPauseBtn) playPauseBtn.disabled = false;
+
+        // Generate AI feedback based on the simulation results
+        generateFeedback({
+          algorithm: algorithm,
+          pageFaults: simulationResult.pageFaults,
+          frames: frameCount,
+          pageReferences: pageRefs,
+        });
+      } else {
+        console.log('Validation failed.');
+      }
+    });
+  }
+
