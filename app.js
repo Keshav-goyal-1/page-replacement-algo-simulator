@@ -98,3 +98,62 @@ if (startSimulationBtn) {
     });
   }
 
+ // Ensure any simulation-specific errors are cleared
+ const simulationError = document.getElementById('simulationError');
+ if (simulationError) {
+   simulationError.innerText = '';
+   simulationError.classList.add('hidden');
+ }
+
+ // Initialize the visualization with frame labels
+ initializeVisualization(frameCount);
+
+ // Show the first step
+ showStep(0);
+ currentStep = 1; // Since we have shown the first step
+
+ // Enable simulation controls appropriately
+ const nextStepBtn = document.getElementById('nextStep');
+ const prevStepBtn = document.getElementById('prevStep');
+ const playPauseBtn = document.getElementById('playPause');
+
+ if (nextStepBtn) nextStepBtn.disabled = false;
+ if (prevStepBtn) prevStepBtn.disabled = true;
+ if (playPauseBtn) playPauseBtn.disabled = false;
+
+ // Generate AI feedback based on the simulation results
+ generateFeedback({
+   algorithm: algorithm,
+   pageFaults: simulationResult.pageFaults,
+   frames: frameCount,
+   pageReferences: pageRefs,
+ });
+} else {
+ console.log('Validation failed.');
+}
+});
+}
+
+// ----------------------
+// Input Validation Function
+// ----------------------
+function validateInput(pages, frameCount) {
+let isValid = true;
+
+// Validate Page References
+const pageReferencesInput = document.getElementById('pageReferences');
+const pageReferencesError = document.getElementById('pageReferencesError');
+if (!pageReferencesInput || !pageReferencesError) {
+console.error('Page References input or error element not found.');
+return false;
+}
+
+if (pages.length === 0 || pages.some((p) => isNaN(p))) {
+isValid = false;
+pageReferencesInput.classList.add('input-error');
+pageReferencesError.classList.remove('hidden');
+} else {
+pageReferencesInput.classList.remove('input-error');
+pageReferencesError.classList.add('hidden');
+}
+
