@@ -510,3 +510,55 @@ if (playPauseBtn) {
     }
   });
 }
+
+  // ----------------------
+  // Remove Step Function (for Previous button)
+  // ----------------------
+  function removeStep(stepIndex) {
+    const table = document.getElementById('simulationTable');
+    if (!table) {
+      console.error('Simulation table not found.');
+      return;
+    }
+
+    // Remove the last header cell
+    const headerRow = document.getElementById('tableHeaderRow');
+    if (headerRow && headerRow.lastChild) {
+      headerRow.removeChild(headerRow.lastChild);
+    } else {
+      console.warn('No header cell to remove.');
+    }
+
+    // Remove the last cell from each frame row
+    const frameRows = table.querySelectorAll('.frame-row');
+    frameRows.forEach((row) => {
+      if (row.lastChild) {
+        // Remove tooltip-related data attributes and classes
+        const cell = row.lastChild;
+        cell.classList.remove('bg-red-200', 'bg-green-200', 'has-tooltip');
+        cell.removeAttribute('data-tippy-content');
+        row.removeChild(cell);
+      } else {
+        console.warn(`No cell to remove from frame row ${row.dataset.frameIndex}.`);
+      }
+    });
+
+    // Update narration
+    const narrationText = document.getElementById('narrationText');
+    if (stepIndex > 0) {
+      const step = simulationHistory[stepIndex - 1];
+      if (narrationText) {
+        if (step.fault) {
+          narrationText.innerText = `At time T${step.step}, page ${step.page} caused a page fault and was loaded into Frame ${step.frameUpdated + 1}.`;
+        } else if (step.hitFrames.length > 0) {
+          narrationText.innerText = `At time T${step.step}, page ${step.page} was already in memory (Hit).`;
+        } else {
+          narrationText.innerText = `At time T${step.step}, page ${step.page} was already in memory. No page fault occurred.`;
+        }
+      }
+    } else {
+      if (narrationText) {
+        narrationText.innerText = 'Awaiting simulation...';
+      }
+    }
+  }
