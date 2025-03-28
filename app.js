@@ -1,42 +1,60 @@
-const darkModeToggle = document.getElementById('darkModeToggle');
-if (darkModeToggle) {
-  darkModeToggle.addEventListener('click', () => {
-    document.documentElement.classList.toggle('dark');
-  });
-}
+// app.js
 
-const startSimulationBtn = document.getElementById('startSimulation');
-if (startSimulationBtn) {
-  startSimulationBtn.addEventListener('click', () => {
-    // Retrieve and process user inputs
-    const pageRefsInput = document.getElementById('pageReferences').value.trim();
-    const pageRefs = pageRefsInput.split(/\s+/).map(Number);
-    const frameCount = parseInt(document.getElementById('frameCount').value);
-    const algorithm = document.getElementById('algorithm').value;
+document.addEventListener('DOMContentLoaded', () => {
+  // ----------------------
+  // Dark Mode Toggle
+  // ----------------------
+  const darkModeToggle = document.getElementById('darkModeToggle');
+  if (darkModeToggle) {
+    darkModeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+  }
 
-    // Validate inputs
-    if (validateInput(pageRefs, frameCount)) {
-      let simulationResult;
+  // ----------------------
+  // Simulation Variables
+  // ----------------------
+  let simulationHistory = []; // Stores the history of simulation steps
+  let currentStep = 0;        // Tracks the current step in the simulation
+  let intervalId = null;      // Stores the interval ID for play/pause functionality
 
-      // Execute the selected algorithm
-      switch (algorithm) {
-        case 'FIFO':
-          simulationResult = simulateFIFO(pageRefs, frameCount);
-          break;
-        case 'ModifiedFIFO':
-          simulationResult = simulateModifiedFIFO(pageRefs, frameCount);
-          break;
-        case 'LRU':
-          simulationResult = simulateLRU(pageRefs, frameCount);
-          break;
-        case 'Optimal':
-          simulationResult = simulateOptimal(pageRefs, frameCount);
-          break;
-        default:
-          alert('Algorithm not implemented.');
-          return;
-      }
-      simulationHistory = simulationResult.history;
+  // ----------------------
+  // Event Listener for Start Simulation Button
+  // ----------------------
+  const startSimulationBtn = document.getElementById('startSimulation');
+  if (startSimulationBtn) {
+    startSimulationBtn.addEventListener('click', () => {
+      // Retrieve and process user inputs
+      const pageRefsInput = document.getElementById('pageReferences').value.trim();
+      const pageRefs = pageRefsInput.split(/\s+/).map(Number);
+      const frameCount = parseInt(document.getElementById('frameCount').value);
+      const algorithm = document.getElementById('algorithm').value;
+
+      // Validate inputs
+      if (validateInput(pageRefs, frameCount)) {
+        let simulationResult;
+
+        // Execute the selected algorithm
+        switch (algorithm) {
+          case 'FIFO':
+            simulationResult = simulateFIFO(pageRefs, frameCount);
+            break;
+          case 'ModifiedFIFO':
+            simulationResult = simulateModifiedFIFO(pageRefs, frameCount);
+            break;
+          case 'LRU':
+            simulationResult = simulateLRU(pageRefs, frameCount);
+            break;
+          case 'Optimal':
+            simulationResult = simulateOptimal(pageRefs, frameCount);
+            break;
+          default:
+            alert('Algorithm not implemented.');
+            return;
+        }
+
+        // Update simulation history and reset current step
+        simulationHistory = simulationResult.history;
         currentStep = 0;
 
         // Expose simulationHistory globally for chart.js
@@ -98,66 +116,50 @@ if (startSimulationBtn) {
     });
   }
 
- // Ensure any simulation-specific errors are cleared
- const simulationError = document.getElementById('simulationError');
- if (simulationError) {
-   simulationError.innerText = '';
-   simulationError.classList.add('hidden');
- }
+  // ----------------------
+  // Input Validation Function
+  // ----------------------
+  function validateInput(pages, frameCount) {
+    let isValid = true;
 
- // Initialize the visualization with frame labels
- initializeVisualization(frameCount);
+    // Validate Page References
+    const pageReferencesInput = document.getElementById('pageReferences');
+    const pageReferencesError = document.getElementById('pageReferencesError');
+    if (!pageReferencesInput || !pageReferencesError) {
+      console.error('Page References input or error element not found.');
+      return false;
+    }
 
- // Show the first step
- showStep(0);
- currentStep = 1; // Since we have shown the first step
+    if (pages.length === 0 || pages.some((p) => isNaN(p))) {
+      isValid = false;
+      pageReferencesInput.classList.add('input-error');
+      pageReferencesError.classList.remove('hidden');
+    } else {
+      pageReferencesInput.classList.remove('input-error');
+      pageReferencesError.classList.add('hidden');
+    }
 
- // Enable simulation controls appropriately
- const nextStepBtn = document.getElementById('nextStep');
- const prevStepBtn = document.getElementById('prevStep');
- const playPauseBtn = document.getElementById('playPause');
+    // Validate Frame Count
+    const frameCountInput = document.getElementById('frameCount');
+    const frameCountError = document.getElementById('frameCountError');
+    if (!frameCountInput || !frameCountError) {
+      console.error('Frame Count input or error element not found.');
+      return false;
+    }
 
- if (nextStepBtn) nextStepBtn.disabled = false;
- if (prevStepBtn) prevStepBtn.disabled = true;
- if (playPauseBtn) playPauseBtn.disabled = false;
+    if (isNaN(frameCount) || frameCount <= 0) {
+      isValid = false;
+      frameCountInput.classList.add('input-error');
+      frameCountError.classList.remove('hidden');
+    } else {
+      frameCountInput.classList.remove('input-error');
+      frameCountError.classList.add('hidden');
+    }
 
- // Generate AI feedback based on the simulation results
- generateFeedback({
-   algorithm: algorithm,
-   pageFaults: simulationResult.pageFaults,
-   frames: frameCount,
-   pageReferences: pageRefs,
- });
-} else {
- console.log('Validation failed.');
-}
-});
-}
+    return isValid;
+  }
 
-// ----------------------
-// Input Validation Function
-// ----------------------
-function validateInput(pages, frameCount) {
-let isValid = true;
-
-// Validate Page References
-const pageReferencesInput = document.getElementById('pageReferences');
-const pageReferencesError = document.getElementById('pageReferencesError');
-if (!pageReferencesInput || !pageReferencesError) {
-console.error('Page References input or error element not found.');
-return false;
-}
-
-if (pages.length === 0 || pages.some((p) => isNaN(p))) {
-isValid = false;
-pageReferencesInput.classList.add('input-error');
-pageReferencesError.classList.remove('hidden');
-} else {
-pageReferencesInput.classList.remove('input-error');
-pageReferencesError.classList.add('hidden');
-}
-
- // ----------------------
+  // ----------------------
   // Remove Error Styles on Input
   // ----------------------
   const pageReferencesInput = document.getElementById('pageReferences');
@@ -219,165 +221,221 @@ pageReferencesError.classList.add('hidden');
     return { history, pageFaults };
   }
 
- // Modified FIFO (Second-Chance Algorithm) Implementation
- function simulateModifiedFIFO(pages, frameCount) {
-  let frames = Array(frameCount).fill(null); // Initialize frames
-  let referenceBits = Array(frameCount).fill(0); // Reference bits for second chance
-  let pageFaults = 0;
-  let history = [];
-  let pointer = 0; // Points to the frame to be replaced next
+  // Modified FIFO (Second-Chance Algorithm) Implementation
+  function simulateModifiedFIFO(pages, frameCount) {
+    let frames = Array(frameCount).fill(null); // Initialize frames
+    let referenceBits = Array(frameCount).fill(0); // Reference bits for second chance
+    let pageFaults = 0;
+    let history = [];
+    let pointer = 0; // Points to the frame to be replaced next
 
-  pages.forEach((page, index) => {
-    let fault = false;
-    let frameUpdated = null;
-    let hitFrames = [];
+    pages.forEach((page, index) => {
+      let fault = false;
+      let frameUpdated = null;
+      let hitFrames = [];
 
-    if (frames.includes(page)) {
-      // Page hit
-      const frameIndex = frames.indexOf(page);
-      referenceBits[frameIndex] = 1; // Set reference bit
-      hitFrames.push(frameIndex);
-    } else {
-      // Page fault
-      fault = true;
-      while (true) {
-        if (referenceBits[pointer] === 0) {
-          // Replace this page
-          frames[pointer] = page;
-          frameUpdated = pointer;
-          referenceBits[pointer] = 0; // Reset reference bit
-          pointer = (pointer + 1) % frameCount;
-          break;
+      if (frames.includes(page)) {
+        // Page hit
+        const frameIndex = frames.indexOf(page);
+        referenceBits[frameIndex] = 1; // Set reference bit
+        hitFrames.push(frameIndex);
+      } else {
+        // Page fault
+        fault = true;
+        while (true) {
+          if (referenceBits[pointer] === 0) {
+            // Replace this page
+            frames[pointer] = page;
+            frameUpdated = pointer;
+            referenceBits[pointer] = 0; // Reset reference bit
+            pointer = (pointer + 1) % frameCount;
+            break;
+          } else {
+            // Give a second chance
+            referenceBits[pointer] = 0;
+            pointer = (pointer + 1) % frameCount;
+          }
+        }
+        pageFaults++;
+      }
+
+      history.push({
+        step: index + 1,
+        page: page,
+        frames: [...frames],
+        fault: fault,
+        frameUpdated: frameUpdated,
+        hitFrames: hitFrames, // Array of frame indices that had hits
+      });
+    });
+
+    return { history, pageFaults };
+  }
+
+  function simulateLRU(pages, frameCount) {
+    let frames = Array(frameCount).fill(null);
+    let pageFaults = 0;
+    let history = [];
+    let recentUsage = []; // Tracks the order of page usage
+
+    pages.forEach((page, index) => {
+      let fault = false;
+      let frameUpdated = null;
+      let hitFrames = [];
+
+      if (!frames.includes(page)) {
+        fault = true;
+        if (frames.includes(null)) {
+          const emptyIndex = frames.indexOf(null);
+          frames[emptyIndex] = page;
+          frameUpdated = emptyIndex;
         } else {
-          // Give a second chance
-          referenceBits[pointer] = 0;
-          pointer = (pointer + 1) % frameCount;
+          // Find the least recently used page
+          const lruPage = recentUsage.shift();
+          const lruIndex = frames.indexOf(lruPage);
+          frames[lruIndex] = page;
+          frameUpdated = lruIndex;
+        }
+        pageFaults++;
+      } else {
+        // Page hit
+        const hitIndex = frames.indexOf(page);
+        hitFrames.push(hitIndex);
+        // Update recent usage by removing the page from its current position
+        const usageIndex = recentUsage.indexOf(page);
+        if (usageIndex !== -1) {
+          recentUsage.splice(usageIndex, 1);
         }
       }
-      pageFaults++;
-    }
 
-    history.push({
-      step: index + 1,
-      page: page,
-      frames: [...frames],
-      fault: fault,
-      frameUpdated: frameUpdated,
-      hitFrames: hitFrames, // Array of frame indices that had hits
+      // Update recent usage by adding the current page
+      recentUsage.push(page);
+
+      history.push({
+        step: index + 1,
+        page: page,
+        frames: [...frames],
+        fault: fault,
+        frameUpdated: frameUpdated,
+        hitFrames: hitFrames, // Array of frame indices that had hits
+      });
     });
-  });
 
-  return { history, pageFaults };
-}
-function simulateLRU(pages, frameCount) {
-  let frames = Array(frameCount).fill(null);
-  let pageFaults = 0;
-  let history = [];
-  let recentUsage = []; // Tracks the order of page usage
+    return { history, pageFaults };
+  }
 
-  pages.forEach((page, index) => {
-    let fault = false;
-    let frameUpdated = null;
-    let hitFrames = [];
+  function simulateOptimal(pages, frameCount) {
+    let frames = Array(frameCount).fill(null);
+    let pageFaults = 0;
+    let history = [];
 
-    if (!frames.includes(page)) {
-      fault = true;
-      if (frames.includes(null)) {
-        const emptyIndex = frames.indexOf(null);
-        frames[emptyIndex] = page;
-        frameUpdated = emptyIndex;
+    pages.forEach((page, index) => {
+      let fault = false;
+      let frameUpdated = null;
+      let hitFrames = [];
+
+      if (!frames.includes(page)) {
+        fault = true;
+        if (frames.includes(null)) {
+          const emptyIndex = frames.indexOf(null);
+          frames[emptyIndex] = page;
+          frameUpdated = emptyIndex;
+        } else {
+          // Predict future usage for each page in frames
+          let futureIndices = frames.map((framePage) => {
+            let nextUse = pages.slice(index + 1).indexOf(framePage);
+            return nextUse === -1 ? Infinity : nextUse;
+          });
+
+          // Select the frame with the farthest next use
+          let maxFuture = Math.max(...futureIndices);
+          let victimIndices = futureIndices
+            .map((val, idx) => ({ val, idx }))
+            .filter(obj => obj.val === maxFuture)
+            .map(obj => obj.idx);
+
+          // If multiple victims, select the first one
+          let victimIndex = victimIndices[0];
+
+          frames[victimIndex] = page;
+          frameUpdated = victimIndex;
+        }
+        pageFaults++;
       } else {
-        // Find the least recently used page
-        const lruPage = recentUsage.shift();
-        const lruIndex = frames.indexOf(lruPage);
-        frames[lruIndex] = page;
-        frameUpdated = lruIndex;
+        // Page hit
+        const hitIndex = frames.indexOf(page);
+        hitFrames.push(hitIndex);
       }
-      pageFaults++;
-    } else {
-      // Page hit
-      const hitIndex = frames.indexOf(page);
-      hitFrames.push(hitIndex);
-      // Update recent usage by removing the page from its current position
-      const usageIndex = recentUsage.indexOf(page);
-      if (usageIndex !== -1) {
-        recentUsage.splice(usageIndex, 1);
-      }
+
+      history.push({
+        step: index + 1,
+        page: page,
+        frames: [...frames],
+        fault: fault,
+        frameUpdated: frameUpdated,
+        hitFrames: hitFrames, // Array of frame indices that had hits
+      });
+    });
+
+    return { history, pageFaults };
+  }
+
+  // ----------------------
+  // Initialize Visualization Function
+  // ----------------------
+  function initializeVisualization(frameCount) {
+    const visualizationArea = document.getElementById('visualizationArea');
+    if (!visualizationArea) {
+      console.error('Visualization area not found.');
+      return;
+    }
+    visualizationArea.innerHTML = ''; // Clear previous content
+
+    // Create the table element
+    const table = document.createElement('table');
+    table.className = 'w-full border-collapse text-center';
+    table.id = 'simulationTable';
+
+    // Create the header row
+    const headerRow = document.createElement('tr');
+    headerRow.id = 'tableHeaderRow';
+
+    const emptyHeader = document.createElement('th');
+    emptyHeader.className = 'border px-2 py-1';
+    emptyHeader.innerText = 'Frame';
+    headerRow.appendChild(emptyHeader);
+
+    table.appendChild(headerRow);
+
+    // Create rows for each frame
+    for (let i = 0; i < frameCount; i++) {
+      const row = document.createElement('tr');
+      row.classList.add('frame-row');
+      row.dataset.frameIndex = i;
+
+      // Frame label cell
+      const frameCell = document.createElement('td');
+      frameCell.className = 'border px-2 py-1 font-semibold';
+      frameCell.innerText = `Frame ${i + 1}`;
+      row.appendChild(frameCell);
+
+      table.appendChild(row);
     }
 
-    // Update recent usage by adding the current page
-    recentUsage.push(page);
+    visualizationArea.appendChild(table);
+  }
 
-    history.push({
-      step: index + 1,
-      page: page,
-      frames: [...frames],
-      fault: fault,
-      frameUpdated: frameUpdated,
-      hitFrames: hitFrames, // Array of frame indices that had hits
-    });
-  });
-
-  return { history, pageFaults };
-}
-
-function simulateOptimal(pages, frameCount) {
-  let frames = Array(frameCount).fill(null);
-  let pageFaults = 0;
-  let history = [];
-
-  pages.forEach((page, index) => {
-    let fault = false;
-    let frameUpdated = null;
-    let hitFrames = [];
-
-    if (!frames.includes(page)) {
-      fault = true;
-      if (frames.includes(null)) {
-        const emptyIndex = frames.indexOf(null);
-        frames[emptyIndex] = page;
-        frameUpdated = emptyIndex;
-      } else {
-        // Predict future usage for each page in frames
-        let futureIndices = frames.map((framePage) => {
-          let nextUse = pages.slice(index + 1).indexOf(framePage);
-          return nextUse === -1 ? Infinity : nextUse;
-        });
-
-        // Select the frame with the farthest next use
-        let maxFuture = Math.max(...futureIndices);
-        let victimIndices = futureIndices
-          .map((val, idx) => ({ val, idx }))
-          .filter(obj => obj.val === maxFuture)
-          .map(obj => obj.idx);
-
-        // If multiple victims, select the first one
-        let victimIndex = victimIndices[0];
-
-        frames[victimIndex] = page;
-        frameUpdated = victimIndex;
-      }
-      pageFaults++;
-    } else {
-      // Page hit
-      const hitIndex = frames.indexOf(page);
-      hitFrames.push(hitIndex);
+  // ----------------------
+  // Show Step Function
+  // ----------------------
+  function showStep(stepIndex) {
+    const table = document.getElementById('simulationTable');
+    if (!table) {
+      console.error('Simulation table not found.');
+      return;
     }
-
-    history.push({
-      step: index + 1,
-      page: page,
-      frames: [...frames],
-      fault: fault,
-      frameUpdated: frameUpdated,
-      hitFrames: hitFrames, // Array of frame indices that had hits
-    });
-  });
-
-  return { history, pageFaults };
-}
-
-const step = simulationHistory[stepIndex];
+  
+    const step = simulationHistory[stepIndex];
     if (!step) {
       console.error(`Step ${stepIndex} not found in simulation history.`);
       return;
@@ -437,79 +495,79 @@ const step = simulationHistory[stepIndex];
         });
       }
     });
-
-  // Update narration
-  const narrationText = document.getElementById('narrationText');
-  if (narrationText) {
-    if (step.fault) {
-      narrationText.innerText = `At time T${step.step}, page ${step.page} caused a page fault and was loaded into Frame ${step.frameUpdated + 1}.`;
-    } else if (step.hitFrames.length > 0) {
-      narrationText.innerText = `At time T${step.step}, page ${step.page} was already in memory (Hit).`;
-    } else {
-      narrationText.innerText = `At time T${step.step}, page ${step.page} was already in memory. No page fault occurred.`;
+  
+    // Update narration
+    const narrationText = document.getElementById('narrationText');
+    if (narrationText) {
+      if (step.fault) {
+        narrationText.innerText = `At time T${step.step}, page ${step.page} caused a page fault and was loaded into Frame ${step.frameUpdated + 1}.`;
+      } else if (step.hitFrames.length > 0) {
+        narrationText.innerText = `At time T${step.step}, page ${step.page} was already in memory (Hit).`;
+      } else {
+        narrationText.innerText = `At time T${step.step}, page ${step.page} was already in memory. No page fault occurred.`;
+      }
     }
   }
-}
 
-// ----------------------
-// Controls Event Listeners
-// ----------------------
-const nextStepBtn = document.getElementById('nextStep');
-const prevStepBtn = document.getElementById('prevStep');
-const playPauseBtn = document.getElementById('playPause');
+  // ----------------------
+  // Controls Event Listeners
+  // ----------------------
+  const nextStepBtn = document.getElementById('nextStep');
+  const prevStepBtn = document.getElementById('prevStep');
+  const playPauseBtn = document.getElementById('playPause');
 
-if (nextStepBtn) {
-  nextStepBtn.addEventListener('click', () => {
-    if (currentStep < simulationHistory.length) {
-      showStep(currentStep);
-      currentStep++;
-      if (prevStepBtn) prevStepBtn.disabled = false;
-    }
-    if (currentStep >= simulationHistory.length) {
-      if (nextStepBtn) nextStepBtn.disabled = true;
-    }
-  });
-}
+  if (nextStepBtn) {
+    nextStepBtn.addEventListener('click', () => {
+      if (currentStep < simulationHistory.length) {
+        showStep(currentStep);
+        currentStep++;
+        if (prevStepBtn) prevStepBtn.disabled = false;
+      }
+      if (currentStep >= simulationHistory.length) {
+        if (nextStepBtn) nextStepBtn.disabled = true;
+      }
+    });
+  }
 
-if (prevStepBtn) {
-  prevStepBtn.addEventListener('click', () => {
-    if (currentStep > 1) {
-      currentStep--;
-      removeStep(currentStep);
-      if (nextStepBtn) nextStepBtn.disabled = false;
-    } else if (currentStep === 1) {
-      currentStep--;
-      removeStep(0);
-      if (prevStepBtn) prevStepBtn.disabled = true;
-      if (nextStepBtn) nextStepBtn.disabled = false;
-    }
-  });
-}
+  if (prevStepBtn) {
+    prevStepBtn.addEventListener('click', () => {
+      if (currentStep > 1) {
+        currentStep--;
+        removeStep(currentStep);
+        if (nextStepBtn) nextStepBtn.disabled = false;
+      } else if (currentStep === 1) {
+        currentStep--;
+        removeStep(0);
+        if (prevStepBtn) prevStepBtn.disabled = true;
+        if (nextStepBtn) nextStepBtn.disabled = false;
+      }
+    });
+  }
 
-if (playPauseBtn) {
-  playPauseBtn.addEventListener('click', () => {
-    if (intervalId) {
-      clearInterval(intervalId);
-      intervalId = null;
-      playPauseBtn.innerText = 'Play';
-    } else {
-      intervalId = setInterval(() => {
-        if (currentStep < simulationHistory.length) {
-          showStep(currentStep);
-          currentStep++;
-          if (prevStepBtn) prevStepBtn.disabled = false;
-        }
-        if (currentStep >= simulationHistory.length) {
-          clearInterval(intervalId);
-          intervalId = null;
-          playPauseBtn.innerText = 'Play';
-          if (nextStepBtn) nextStepBtn.disabled = true;
-        }
-      }, 1000); // Adjust the speed as needed (milliseconds)
-      playPauseBtn.innerText = 'Pause';
-    }
-  });
-}
+  if (playPauseBtn) {
+    playPauseBtn.addEventListener('click', () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+        playPauseBtn.innerText = 'Play';
+      } else {
+        intervalId = setInterval(() => {
+          if (currentStep < simulationHistory.length) {
+            showStep(currentStep);
+            currentStep++;
+            if (prevStepBtn) prevStepBtn.disabled = false;
+          }
+          if (currentStep >= simulationHistory.length) {
+            clearInterval(intervalId);
+            intervalId = null;
+            playPauseBtn.innerText = 'Play';
+            if (nextStepBtn) nextStepBtn.disabled = true;
+          }
+        }, 1000); // Adjust the speed as needed (milliseconds)
+        playPauseBtn.innerText = 'Pause';
+      }
+    });
+  }
 
   // ----------------------
   // Remove Step Function (for Previous button)
@@ -563,8 +621,6 @@ if (playPauseBtn) {
     }
   }
 
-
-  
   // ----------------------
   // Generate AI Feedback Function
   // ----------------------
