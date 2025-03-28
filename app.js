@@ -485,3 +485,28 @@ if (prevStepBtn) {
     }
   });
 }
+
+if (playPauseBtn) {
+  playPauseBtn.addEventListener('click', () => {
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+      playPauseBtn.innerText = 'Play';
+    } else {
+      intervalId = setInterval(() => {
+        if (currentStep < simulationHistory.length) {
+          showStep(currentStep);
+          currentStep++;
+          if (prevStepBtn) prevStepBtn.disabled = false;
+        }
+        if (currentStep >= simulationHistory.length) {
+          clearInterval(intervalId);
+          intervalId = null;
+          playPauseBtn.innerText = 'Play';
+          if (nextStepBtn) nextStepBtn.disabled = true;
+        }
+      }, 1000); // Adjust the speed as needed (milliseconds)
+      playPauseBtn.innerText = 'Pause';
+    }
+  });
+}
