@@ -437,3 +437,51 @@ const step = simulationHistory[stepIndex];
         });
       }
     });
+
+  // Update narration
+  const narrationText = document.getElementById('narrationText');
+  if (narrationText) {
+    if (step.fault) {
+      narrationText.innerText = `At time T${step.step}, page ${step.page} caused a page fault and was loaded into Frame ${step.frameUpdated + 1}.`;
+    } else if (step.hitFrames.length > 0) {
+      narrationText.innerText = `At time T${step.step}, page ${step.page} was already in memory (Hit).`;
+    } else {
+      narrationText.innerText = `At time T${step.step}, page ${step.page} was already in memory. No page fault occurred.`;
+    }
+  }
+}
+
+// ----------------------
+// Controls Event Listeners
+// ----------------------
+const nextStepBtn = document.getElementById('nextStep');
+const prevStepBtn = document.getElementById('prevStep');
+const playPauseBtn = document.getElementById('playPause');
+
+if (nextStepBtn) {
+  nextStepBtn.addEventListener('click', () => {
+    if (currentStep < simulationHistory.length) {
+      showStep(currentStep);
+      currentStep++;
+      if (prevStepBtn) prevStepBtn.disabled = false;
+    }
+    if (currentStep >= simulationHistory.length) {
+      if (nextStepBtn) nextStepBtn.disabled = true;
+    }
+  });
+}
+
+if (prevStepBtn) {
+  prevStepBtn.addEventListener('click', () => {
+    if (currentStep > 1) {
+      currentStep--;
+      removeStep(currentStep);
+      if (nextStepBtn) nextStepBtn.disabled = false;
+    } else if (currentStep === 1) {
+      currentStep--;
+      removeStep(0);
+      if (prevStepBtn) prevStepBtn.disabled = true;
+      if (nextStepBtn) nextStepBtn.disabled = false;
+    }
+  });
+}
