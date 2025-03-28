@@ -562,3 +562,42 @@ if (playPauseBtn) {
       }
     }
   }
+
+
+  
+  // ----------------------
+  // Generate AI Feedback Function
+  // ----------------------
+  async function generateFeedback(simulationData) {
+    const prompt = `The user has completed a page replacement simulation using the ${simulationData.algorithm} algorithm with ${simulationData.frames} frames and the page reference sequence ${simulationData.pageReferences.join(
+      ', '
+    )}. There were ${simulationData.pageFaults} page faults. Provide a simple explanation of the results and suggest if a different algorithm might perform better.`;
+
+    try {
+      const response = await fetch('/api/ai-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+      const aiFeedback = document.getElementById('aiFeedback');
+      if (aiFeedback) {
+        aiFeedback.innerText = data.feedback;
+      }
+    } catch (error) {
+      console.error('Error fetching AI feedback:', error);
+      // Display error message with highlighting
+      const aiFeedback = document.getElementById('aiFeedback');
+      if (aiFeedback) {
+        aiFeedback.innerText = 'Error fetching AI feedback.';
+        aiFeedback.classList.add('text-red-500');
+        aiFeedback.classList.remove('text-gray-800', 'dark:text-gray-200');
+      }
+    }
+  }
+});
