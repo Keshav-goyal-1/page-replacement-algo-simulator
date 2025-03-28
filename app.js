@@ -376,3 +376,64 @@ function simulateOptimal(pages, frameCount) {
 
   return { history, pageFaults };
 }
+
+const step = simulationHistory[stepIndex];
+    if (!step) {
+      console.error(`Step ${stepIndex} not found in simulation history.`);
+      return;
+    }
+  
+    // Add a new header cell for the current step
+    const headerRow = document.getElementById('tableHeaderRow');
+    const th = document.createElement('th');
+    th.className = 'border px-2 py-1';
+    th.innerText = `T${step.step}`;
+    headerRow.appendChild(th);
+  
+    // For each frame, add a new cell
+    const frameRows = table.querySelectorAll('.frame-row');
+  
+    frameRows.forEach((row) => {
+      const frameIndex = parseInt(row.dataset.frameIndex);
+      const cell = document.createElement('td');
+      cell.className = 'border px-2 py-1 relative';
+  
+      const pageInFrame = step.frames[frameIndex];
+  
+      if (pageInFrame !== null) {
+        cell.innerText = pageInFrame;
+      }
+  
+      // Remove any existing color classes to prevent conflicts
+      cell.classList.remove('bg-red-200', 'bg-green-200', 'text-red-800', 'text-green-800', 'text-red-200', 'text-green-200');
+  
+      // Apply custom classes based on faults and hits
+      if (step.frameUpdated === frameIndex) {
+        if (step.fault) {
+          // Page fault occurred in this frame
+          cell.classList.add('page-fault', 'has-tooltip');
+          cell.setAttribute('data-tippy-content', `Page fault: Loaded page ${pageInFrame} into Frame ${frameIndex + 1}`);
+        } else {
+          // Page hit occurred in this frame
+          cell.classList.add('page-hit', 'has-tooltip');
+          cell.setAttribute('data-tippy-content', `Page hit: Page ${pageInFrame} was already in Frame ${frameIndex + 1}`);
+        }
+      }
+  
+      // Apply hit class for hits that are not the updated frame
+      if (!step.fault && step.hitFrames.includes(frameIndex)) {
+        cell.classList.add('page-hit', 'has-tooltip');
+        cell.setAttribute('data-tippy-content', `Page hit: Page ${pageInFrame} was already in Frame ${frameIndex + 1}`);
+      }
+  
+      row.appendChild(cell);
+  
+      // Initialize tooltip for this cell
+      if (typeof tippy === 'function') { // Ensure tippy is loaded
+        tippy(cell, {
+          placement: 'top',
+          arrow: true,
+          animation: 'scale',
+        });
+      }
+    });
